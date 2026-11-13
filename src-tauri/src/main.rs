@@ -18,7 +18,8 @@
 //! - Updater: `app.updater()?.check().await?` returns `Option<Update>`;
 //!   `update.download_and_install(on_chunk, on_finish)` takes a chunk
 //!   callback `(chunk_length, content_length)` and a no-arg finish
-//!   callback. Restart with `app.restart()` (ProcessExt).
+//!   callback. Restart with `app.restart()` — an inherent `AppHandle`
+//!   method in Tauri v2 core (no import needed).
 //! - Tray: needs the `tray-icon` feature on the `tauri` crate.
 //!   Menu items use `MenuItem::with_id` (stable ids) + `Menu::with_items`,
 //!   clicks are handled in `on_menu_event` via `event.id`.
@@ -29,7 +30,6 @@ use tauri::{
     Manager, WebviewUrl, WebviewWindowBuilder,
 };
 use tauri_plugin_notification::NotificationExt;
-use tauri_plugin_process::ProcessExt;
 use tauri_plugin_updater::UpdaterExt;
 
 /// Backend URL baked in at build time (CI sets `ZEN_BACKEND_URL`).
@@ -155,10 +155,9 @@ async fn check_for_updates_inner(app: &tauri::AppHandle) -> Result<String, Strin
                 .await
                 .map_err(|e| e.to_string())?;
             // Install finished — restart into the new version.
-            // `restart()` never returns in practice; the `Ok` below keeps
-            // the match arms the same type either way.
-            app.restart();
-            Ok("Zen updated — restarting.".to_string())
+            // `restart()` never returns, so this arm coerces to the
+            // match's `Result<String, String>` type.
+            app.restart()
         }
         None => Ok("Zen is up to date.".to_string()),
     }
