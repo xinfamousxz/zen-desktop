@@ -1,5 +1,11 @@
 name: Build Zen desktop installers
 
+# The tauri-action uploads the built installers to the release, which needs
+# write access to repo contents (otherwise the upload fails with
+# "Resource not accessible by integration").
+permissions:
+  contents: write
+
 # Builds the Windows (.exe/.msi) and macOS (.dmg) installers and uploads
 # them to the GitHub release that triggered this workflow.
 #
