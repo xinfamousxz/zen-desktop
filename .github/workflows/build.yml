@@ -1,0 +1,69 @@
+name: Build Zen desktop installers
+
+# Builds the Windows (.exe/.msi) and macOS (.dmg) installers and uploads
+# them to the GitHub release that triggered this workflow.
+#
+# How to cut a release:
+#   1. Make sure the repo variable ZEN_BACKEND_URL is set for a Beta build
+#      (the Vultr server URL, e.g. https://zen.example.com) — leave it
+#      UNSET for a pre-load build (the app shows the countdown instead).
+#      Repo Settings -> Secrets and variables -> Actions -> Variables.
+#   2. Create a GitHub release (tag vX.Y.Z) — via the web UI or
+#      `gh release create vX.Y.Z`. This workflow builds the installers on
+#      Windows + macOS runners and attaches them to that release.
+#      A pre-release works the same way for a test build.
+#   3. The pre-load app's auto-updater picks the release up on next launch.
+#
+# Required secrets (repo Settings -> Secrets and variables -> Actions):
+#   TAURI_SIGNING_PRIVATE_KEY          (from `tauri signer generate`)
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD (the key password you chose)
+# Without them the build fails: the updater needs a signed release.
+# See desktop-app/README.md ("What is needed next") for the one-time setup.
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: macos-latest
+    runs-on: ${{ matrix.os }}
+    env:
+      # Beta build: repo variable set by the maintainer once the server is
+      # live. Pre-load build: leave the variable unset (empty backend URL).
+      ZEN_BACKEND_URL: ${{ vars.ZEN_BACKEND_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Tauri CLI and generate platform icons
+        # Generates icon.icns (macOS) and any missing sizes from icon.png.
+        run: |
+          npm install -g @tauri-apps/cli@2
+          tauri icon src-tauri/icons/icon.png
+
+      - name: Build installers and upload to the release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          ZEN_BACKEND_URL: ${{ env.ZEN_BACKEND_URL }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          releaseBody: "Zen desktop app. Download it early — it unlocks for the Beta on November 20, 2026."
+          releaseDraft: false
+          prerelease: false

@@ -1,0 +1,19 @@
+# Rust / Tauri build output
+/target/
+src-tauri/target/
+src-tauri/gen/
+
+# Node
+node_modules/
+
+# macOS / Windows junk
+.DS_Store
+Thumbs.db
+
+# Local env / secrets (never commit keys)
+.env
+*.pem
+*.key
+
+# The bundled frontend snapshot (src/) IS committed on purpose:
+# CI builds the installers from it, so it must be in the repo.
