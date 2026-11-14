@@ -37,7 +37,13 @@ jobs:
       matrix:
         include:
           - os: windows-latest
+            target: ""
+          # macOS builds as a UNIVERSAL binary (Intel + Apple Silicon in one
+          # .dmg) so a single download works on every Mac. The aarch64-only
+          # DMG was reported as "damaged" on a Mac, and a universal build
+          # removes the chip question entirely (Rosetta is not needed).
           - os: macos-latest
+            target: universal-apple-darwin
     runs-on: ${{ matrix.os }}
     env:
       # Beta build: repo variable set by the maintainer once the server is
@@ -53,6 +59,10 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Add macOS targets for universal build
+        if: runner.os == 'macOS'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
       - name: Install Tauri CLI and generate platform icons
         # Generates icon.icns (macOS) and any missing sizes from icon.png.
@@ -73,3 +83,4 @@ jobs:
           releaseBody: "Zen desktop app. Download it early — it unlocks for the Beta on November 20, 2026."
           releaseDraft: false
           prerelease: false
+          args: ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }}
