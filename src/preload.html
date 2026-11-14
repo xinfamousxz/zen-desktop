@@ -38,9 +38,24 @@
   .note { font-size: 13px; color: #6b7386; margin-top: 24px; }
   .live { display: none; }
   .live h1 { color: #2693ff; }
+  /* Small update button, top-right. Hidden until an update is available. */
+  .update-btn {
+    display: none;
+    position: fixed; top: 16px; right: 16px; z-index: 10;
+    align-items: center; gap: 6px;
+    background: #10131c; color: #f2f4f8;
+    border: 1px solid #2693ff; border-radius: 999px;
+    padding: 7px 13px; font-size: 12.5px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    box-shadow: 0 4px 18px rgba(38, 147, 255, 0.35);
+  }
+  .update-btn:hover { background: #2693ff; }
+  .update-btn:disabled { opacity: 0.65; cursor: default; }
+  .update-btn.show { display: inline-flex; }
 </style>
 </head>
 <body>
+  <button class="update-btn" id="updateBtn" type="button" title="Update Zen">↓ Update</button>
   <div class="wrap" id="pre">
     <div class="mark">Z</div>
     <h1>Zen Beta begins in</h1>
@@ -77,6 +92,41 @@
     }
     tick();
     setInterval(tick, 1000);
+
+    // Update button: shown (top-right) only when a newer version exists.
+    // Clicking it downloads, installs, and restarts into the update.
+    // Uses the Tauri commands in src-tauri/src/main.rs. If the Tauri API
+    // is unavailable (plain browser) the button simply stays hidden.
+    (function () {
+      var btn = document.getElementById("updateBtn");
+      function invoke(cmd) {
+        if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
+          return window.__TAURI__.core.invoke(cmd);
+        }
+        return Promise.reject(new Error("Tauri API unavailable"));
+      }
+      function check() {
+        invoke("check_for_update_available").then(function (version) {
+          if (version) {
+            btn.textContent = "↓ Update to " + version;
+            btn.classList.add("show");
+          }
+        }).catch(function () { /* no update info — button stays hidden */ });
+      }
+      btn.addEventListener("click", function () {
+        btn.disabled = true;
+        btn.textContent = "Updating…";
+        invoke("check_for_updates").then(function () {
+          btn.textContent = "Restarting…";
+        }).catch(function () {
+          btn.disabled = false;
+          btn.textContent = "↓ Update failed — try again";
+        });
+      });
+      check();
+      // Re-check every 10 minutes while the countdown is open.
+      setInterval(check, 600000);
+    })();
   </script>
 </body>
 </html>

@@ -83,4 +83,10 @@ jobs:
           releaseBody: "Zen desktop app. Download it early — it unlocks for the Beta on November 20, 2026."
           releaseDraft: false
           prerelease: false
+          # Keep the universal macOS binary as a single entry in the updater
+          # JSON. With the default (false) the action splits it per-arch,
+          # cannot find per-arch signatures, and skips uploading latest.json
+          # entirely ("Signature not found for the updater JSON") — which
+          # broke auto-updates in v0.1.0–v0.1.2.
+          updaterJsonKeepUniversal: true
           args: ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }}

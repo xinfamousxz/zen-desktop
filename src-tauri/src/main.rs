@@ -100,7 +100,7 @@ fn main() {
             let _ = window;
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_backend_url, check_for_updates])
+        .invoke_handler(tauri::generate_handler![get_backend_url, check_for_updates, check_for_update_available])
         .run(tauri::generate_context!())
         .expect("error while running Zen");
 }
@@ -124,6 +124,20 @@ fn get_backend_url() -> Option<String> {
     BACKEND_URL
         .filter(|u| !u.is_empty())
         .map(|u| u.to_string())
+}
+
+/// Check whether an update is available, WITHOUT downloading it.
+/// Returns the new version string if one is available, else None.
+/// Used by the pre-load page to show/hide the update button.
+#[tauri::command]
+async fn check_for_update_available(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let update = app
+        .updater()
+        .map_err(|e| e.to_string())?
+        .check()
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(update.map(|u| u.version.to_string()))
 }
 
 /// Check for an update (called from the tray menu, or by the frontend).
