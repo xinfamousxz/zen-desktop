@@ -156,7 +156,9 @@ jobs:
       - name: Init Android project
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.3.11579264
-        run: cargo tauri android init --ci
+        # The CLI is installed via npm, so the binary is `tauri`,
+        # not `cargo tauri` (that needs the cargo-tauri crate).
+        run: tauri android init --ci
 
       - name: Pin compileSdk/targetSdk to 36
         # The generated project may default to a different API level;
@@ -169,7 +171,7 @@ jobs:
       - name: Build debug APK
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.3.11579264
-        run: cargo tauri android build --debug --apk
+        run: tauri android build --debug --apk
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
