@@ -131,12 +131,17 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
+      # The ubuntu runner already ships an Android SDK
+      # (/usr/local/lib/android/sdk) — the setup-android action is not
+      # needed and its default `tools` package no longer exists in the
+      # SDK repository, so it fails. Install only the packages we need.
       - name: Install Android SDK packages
         run: |
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          SDK=/usr/local/lib/android/sdk
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          if [ -d "$SDK/cmdline-tools/latest" ]; then CT="$SDK/cmdline-tools/latest/bin"; else CT="$(ls -d "$SDK"/cmdline-tools/*/ | sort -V | tail -n 1)bin"; fi
+          export PATH="$CT:$PATH"
           sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;26.3.11579264"
           yes | sdkmanager --licenses
 
