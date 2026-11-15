@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.tauri.app/config/2/capabilities",
+  "description": "Capabilities for the Zen Android app.",
+  "identifier": "mobile",
+  "platforms": [
+    "android",
+    "iOS"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-show",
+    "core:window:allow-set-focus",
+    "notification:default"
+  ],
+  "windows": [
+    "main"
+  ]
+}
