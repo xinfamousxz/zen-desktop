@@ -187,5 +187,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zen-android-debug-apk
-          path: src-tauri/gen/android/app/build/outputs/apk/debug/app-debug.apk
+          # The build produces the `universal` product flavor, so the
+          # APK lives under apk/universal/debug, not apk/debug.
+          path: src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
           if-no-files-found: error
