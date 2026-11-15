@@ -168,6 +168,16 @@ jobs:
           sed -i 's/targetSdk = [0-9]*/targetSdk = 36/' src-tauri/gen/android/app/build.gradle.kts
           grep -E 'compileSdk|targetSdk' src-tauri/gen/android/app/build.gradle.kts
 
+      - name: Link the Tauri CLI for the Gradle Rust plugin
+        # The generated Gradle Rust plugin runs
+        # `node tauri android android-studio-script` from src-tauri, and
+        # Node resolves the bare `tauri` name to a file literally named
+        # `tauri` in that directory. Symlink it to the globally
+        # installed CLI (CI-only; nothing is committed).
+        run: |
+          ln -s "$(npm root -g)/@tauri-apps/cli/tauri.js" src-tauri/tauri
+          (cd src-tauri && node tauri --version)
+
       - name: Build debug APK
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.3.11579264
