@@ -114,7 +114,7 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
                 }
             }
             "check-updates" => {
-                let handle = app.handle().clone();
+                let handle = app.clone();
                 tauri::async_runtime::spawn(async move {
                     let _ = check_for_updates_inner(&handle).await;
                 });
