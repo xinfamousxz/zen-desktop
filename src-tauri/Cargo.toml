@@ -9,8 +9,9 @@ rust-version = "1.77.2"
 # Desktop-only binary crate (Windows + macOS). The shared app logic lives
 # in src/lib.rs (with a mobile entry point), so the same shell also builds
 # for Android; main.rs is just the desktop wrapper that calls zen::run().
-# Desktop-only plugins (updater, process) and the tray-icon feature are
-# gated to desktop targets below — they have no mobile support.
+# Desktop-only plugins (updater, process) and the tray-icon feature have
+# no mobile support at runtime, but they must live in unconditional
+# [dependencies] (see below) — Cargo never enables [target.'cfg(desktop)'].
 [lib]
 name = "zen"
 path = "src/lib.rs"
@@ -23,7 +24,13 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# tray-icon must be an unconditional feature: `cfg(desktop)` is a
+# tauri-build cfg set at compile time, NOT a Cargo target cfg, so
+# [target.'cfg(desktop)'.dependencies] is never selected by Cargo and the
+# desktop build failed with "unresolved import `tauri::tray`" (E0432).
+# The tray module itself is cfg-gated inside tauri (desktop only) and
+# lib.rs only uses it under #[cfg(desktop)], so this is harmless on Android.
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-notification = "2"
 # Updater + process are desktop-only plugins at RUNTIME (lib.rs registers
 # them only under #[cfg(desktop)]), but they must live in unconditional
@@ -36,9 +43,6 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-
-[target.'cfg(desktop)'.dependencies]
-tauri = { version = "2", features = ["tray-icon"] }
 
 [profile.release]
 lto = true
