@@ -25,13 +25,20 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-notification = "2"
+# Updater + process are desktop-only plugins at RUNTIME (lib.rs registers
+# them only under #[cfg(desktop)]), but they must live in unconditional
+# [dependencies]: when they were gated behind [target.'cfg(desktop)'],
+# tauri-build could not find them and the desktop build failed with
+# "Permission updater:default not found". They compile for Android targets
+# (their desktop code paths are cfg-gated internally) and are simply never
+# registered there.
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 [target.'cfg(desktop)'.dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
-tauri-plugin-updater = "2"
-tauri-plugin-process = "2"
 
 [profile.release]
 lto = true
