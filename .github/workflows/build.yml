@@ -87,7 +87,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: ${{ github.ref_name }}
-          releaseBody: "Zen desktop app. Download it early — it unlocks for the Beta on November 20, 2026."
+          releaseBody: "Zen desktop app. The Beta is live now — download it and jump in."
           releaseDraft: false
           prerelease: false
           # Keep the universal macOS binary as a single entry in the updater
@@ -99,8 +99,9 @@ jobs:
           args: ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }}
 
   # ---------------------------------------------------------------------------
-  # Android debug APK (sideload). Runs only on manual dispatch — never on a
-  # release, and it never touches the desktop installers or the updater.
+  # Android debug APK (sideload). Runs on a published release (so the APK
+  # lands on the release alongside the desktop installers) and on manual
+  # dispatch. It never touches the desktop installers or the updater.
   #
   # Why CI builds it: the local VM cannot run Gradle (its sandbox blocks
   # Java loopback TCP, which the Gradle daemon needs), so the APK is built
@@ -111,11 +112,11 @@ jobs:
   # artifact — download it from the run's Artifacts section.
   # ---------------------------------------------------------------------------
   android:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
-      # Pre-load build: repo variable unset (empty backend URL) means the
-      # app shows the countdown until the server is live (Nov 20).
+      # Beta build: the ZEN_BACKEND_URL repo variable is set to the live
+      # server, so the app opens Zen directly instead of the countdown.
       ZEN_BACKEND_URL: ${{ vars.ZEN_BACKEND_URL }}
     steps:
       - uses: actions/checkout@v4
@@ -191,3 +192,15 @@ jobs:
           # APK lives under apk/universal/debug, not apk/debug.
           path: src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
           if-no-files-found: error
+
+      - name: Upload APK to the release
+        # On a published release, put the APK on the release page next to
+        # the desktop installers so the sites can link it directly.
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+          VER="${GITHUB_REF_NAME#v}"
+          cp "$APK" "Zen_${VER}_universal.apk"
+          gh release upload "$GITHUB_REF_NAME" "Zen_${VER}_universal.apk" --clobber
